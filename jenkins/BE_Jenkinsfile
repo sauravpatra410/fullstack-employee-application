@@ -26,11 +26,11 @@ pipeline {
         stage('Build Backend Docker Image') {
             steps {
                 script {
-                    dir('employeemanagement-backend') { // Backend directory
+                    dir('employeemanagmentbackend') { // Updated directory
                         sh '''
                         docker system prune -f
                         docker container prune -f
-                        docker build -t ${ECR_REPOSITORY} .
+                        docker build -t ${ECR_REPOSITORY} -f Dockerfile .
                         '''
                     }
                 }
@@ -51,7 +51,7 @@ pipeline {
         
         stage('Update Backend Deployment File') {
             steps {
-                dir('employeemanagement-backend') { // Correct directory path for backend
+                dir('employeemanagmentbackend') { // Correct directory path for backend
                     withCredentials([string(credentialsId: 'my-git-pattoken', variable: 'git_token')]) {
                         sh """
                         git config user.email "subrat.padhi1204@outlook.com"
