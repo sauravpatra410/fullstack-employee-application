@@ -1,0 +1,70 @@
+pipeline {
+    agent any 
+
+    environment {
+        AWS_REGION = 'us-east-1'
+        AWS_ACCOUNT_ID = '253490782061'
+        ECR_REPOSITORY = 'frontend'
+        BUILD_NUMBER = "${env.BUILD_NUMBER}"
+        GIT_REPO_NAME = "fullstack-employee-application"
+        GIT_USER_NAME = "Subratp12"
+    }
+
+    stages {
+        stage('Cleaning Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+        
+        stage('Checkout from Git') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Subratp12/fullstack-employee-application.git'
+            }
+        }
+        
+        stage('Docker Image Build') {
+            steps {
+                script {
+                    dir('employeemanagement-frontend') {
+                        sh '''
+                        docker system prune -f
+                        docker container prune -f
+                        docker build -t ${ECR_REPOSITORY} .
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('ECR Image Pushing') {
+            steps {
+                script {
+                    sh '''
+                    aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                    docker tag ${ECR_REPOSITORY}:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${BUILD_NUMBER}
+                    docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${BUILD_NUMBER}
+                    '''
+                }
+            }
+        }
+        
+        stage('Update Deployment File') {
+            steps {
+                dir('employeemanagement-frontend') { 
+                    withCredentials([string(credentialsId: 'my-git-pattoken', variable: 'git_token')]) {
+                        sh """
+                        git config user.email "subrat.padhi1204@outlook.com"
+                        git config user.name "${GIT_USER_NAME}"
+                        echo ${BUILD_NUMBER}
+                        sed -i "s#image:.*#image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${BUILD_NUMBER}#g" frontend.yml
+                        git add frontend.yml
+                        git commit -m "Update deployment Image to version ${BUILD_NUMBER}"
+                        git push https://${git_token}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+                        """
+                    }
+                }
+            }
+        }
+    }
+}
