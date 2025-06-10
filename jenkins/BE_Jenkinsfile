@@ -51,7 +51,7 @@ pipeline {
         
         stage('Update Backend Deployment File') {
             steps {
-                dir('employeemanagmentbackend') { // Correct directory path for backend
+                dir('deployment-yaml') { // Corrected path for backend.yml
                     withCredentials([string(credentialsId: 'my-git-pattoken', variable: 'git_token')]) {
                         sh """
                         git config user.email "subrat.padhi1204@outlook.com"
@@ -59,7 +59,7 @@ pipeline {
                         echo ${BUILD_NUMBER}
                         sed -i "s#image:.*#image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${BUILD_NUMBER}#g" backend.yml
                         git add backend.yml
-                        git commit -m "Updated backend deployment Image to version ${BUILD_NUMBER}"
+                        git commit -m "Updated backend deployment image to version ${BUILD_NUMBER}"
                         git push https://${git_token}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
                         """
                     }
