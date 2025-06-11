@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         AWS_REGION = 'ap-south-1'
-        AWS_ACCOUNT_ID = 'ACCOUNT_ID'
+        AWS_ACCOUNT_ID = credentials('ACCOUNT_ID')
         ECR_REPOSITORY = 'backend'
         BUILD_NUMBER = "${env.BUILD_NUMBER}"
         GIT_REPO_NAME = "fullstack-employee-application"
